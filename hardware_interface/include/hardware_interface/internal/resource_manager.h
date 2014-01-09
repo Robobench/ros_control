@@ -96,6 +96,19 @@ public:
   }
 
   /**
+   * \brief Register in this interface all handles contained in another interface.
+   * \param other Interface whose handles should be also registered in this interface.
+   */
+  void registerHandles(const ResourceManager<ResourceHandle>& other)
+  {
+    const std::vector<std::string> other_names = other.getNames();
+    for (std::vector<std::string>::const_iterator it = other_names.begin(); it != other_names.end(); ++it)
+    {
+      registerHandle(other.getHandle(*it));
+    }
+  }
+
+  /**
    * \brief Get a resource handle by name.
    * \param name Resource name.
    * \return Resource associated to \e name. If the resource name is not found, an exception is thrown.

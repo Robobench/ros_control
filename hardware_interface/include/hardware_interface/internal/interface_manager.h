@@ -44,6 +44,18 @@ namespace hardware_interface
 class InterfaceManager
 {
 public:
+  /** \return Vector of registered interface identifiers. */
+  std::vector<std::string> getNames() const
+  {
+    std::vector<std::string> out;
+    out.reserve(interfaces_.size());
+    for(typename InterfaceMap::const_iterator it = interfaces_.begin(); it != interfaces_.end(); ++it)
+    {
+      out.push_back(it->first);
+    }
+    return out;
+  }
+
   /**
    * \brief Register an interface.
    *
@@ -62,6 +74,31 @@ public:
       ROS_WARN_STREAM("Replacing previously registered interface '" << iface_name << "'.");
     }
     interfaces_[internal::demangledTypeName<T>()] = iface;
+  }
+
+  /**
+   * \brief Register all interfaces contained in another manager.
+   *
+   * \param other A pointer to the interface to store
+   */
+  void registerInterfaces(InterfaceManager* other)
+  {
+    for (InterfaceMap::const_iterator other_it = other->interfaces_.begin(); other_it != other->interfaces_.end(); ++other_it)
+    {
+      InterfaceMap::iterator this_it = interfaces_.find(other_it->first);
+      if (this_it != interfaces_.end())
+      {
+        // Interface already exists: Extract resource handles and append them to the existing interface
+        auto iface       = reflection_cast(this_it->first, other_it->second);  // NOTE: string->general type conversion (no common base class):
+        auto other_iface = reflection_cast(other_it->first, other_it->second); //       Impossible in C++
+        iface.registerHandles(other_iface);
+      }
+      else
+      {
+        // Interface has not yet been registered: Add the interface as-is (contains all resource handles)
+        interfaces_[other_it->first] = other_it->second;
+      }
+    }
   }
 
   /**
